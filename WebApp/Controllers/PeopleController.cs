@@ -1,45 +1,35 @@
-﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 using WebApp.Models;
 
 namespace WebApp.Controllers
 {
     public class PeopleController : Controller
     {
-        private readonly CrudCoreContext _context;
-
-        public PeopleController(CrudCoreContext context)
+        private static List<Person> people = new List<Person>
         {
-            _context = context;
-        }
+            new Person { IdPeople = 1, NamePeople = "Juan", Age = 30 },
+            new Person { IdPeople = 2, NamePeople = "Ana", Age = 25 },
+            new Person { IdPeople = 3, NamePeople = "Carlos", Age = 40 }
+        };
 
         // GET: People
         public async Task<IActionResult> Index()
         {
-              return _context.People != null ? 
-                          View(await _context.People.ToListAsync()) :
-                          Problem("Entity set 'CrudCoreContext.People'  is null.");
+            return View(people);
         }
 
         // GET: People/Details/5
         public async Task<IActionResult> Details(int? id)
         {
-            if (id == null || _context.People == null)
-            {
+            if (id == null)
                 return NotFound();
-            }
 
-            var person = await _context.People
-                .FirstOrDefaultAsync(m => m.IdPeople == id);
+            var person = people.FirstOrDefault(p => p.IdPeople == id);
             if (person == null)
-            {
                 return NotFound();
-            }
 
             return View(person);
         }
@@ -51,16 +41,15 @@ namespace WebApp.Controllers
         }
 
         // POST: People/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("IdPeople,NamePeople,Age")] Person person)
         {
             if (ModelState.IsValid)
             {
-                _context.Add(person);
-                await _context.SaveChangesAsync();
+                // Agregar persona a la lista en memoria
+                person.IdPeople = people.Max(p => p.IdPeople) + 1;
+                people.Add(person);
                 return RedirectToAction(nameof(Index));
             }
             return View(person);
@@ -69,49 +58,33 @@ namespace WebApp.Controllers
         // GET: People/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
-            if (id == null || _context.People == null)
-            {
+            if (id == null)
                 return NotFound();
-            }
 
-            var person = await _context.People.FindAsync(id);
+            var person = people.FirstOrDefault(p => p.IdPeople == id);
             if (person == null)
-            {
                 return NotFound();
-            }
+
             return View(person);
         }
 
         // POST: People/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("IdPeople,NamePeople,Age")] Person person)
         {
             if (id != person.IdPeople)
-            {
                 return NotFound();
-            }
 
             if (ModelState.IsValid)
             {
-                try
-                {
-                    _context.Update(person);
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException)
-                {
-                    if (!PersonExists(person.IdPeople))
-                    {
-                        return NotFound();
-                    }
-                    else
-                    {
-                        throw;
-                    }
-                }
+                var existingPerson = people.FirstOrDefault(p => p.IdPeople == id);
+                if (existingPerson == null)
+                    return NotFound();
+
+                existingPerson.NamePeople = person.NamePeople;
+                existingPerson.Age = person.Age;
+
                 return RedirectToAction(nameof(Index));
             }
             return View(person);
@@ -120,17 +93,12 @@ namespace WebApp.Controllers
         // GET: People/Delete/5
         public async Task<IActionResult> Delete(int? id)
         {
-            if (id == null || _context.People == null)
-            {
+            if (id == null)
                 return NotFound();
-            }
 
-            var person = await _context.People
-                .FirstOrDefaultAsync(m => m.IdPeople == id);
+            var person = people.FirstOrDefault(p => p.IdPeople == id);
             if (person == null)
-            {
                 return NotFound();
-            }
 
             return View(person);
         }
@@ -140,23 +108,18 @@ namespace WebApp.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            if (_context.People == null)
-            {
-                return Problem("Entity set 'CrudCoreContext.People'  is null.");
-            }
-            var person = await _context.People.FindAsync(id);
+            var person = people.FirstOrDefault(p => p.IdPeople == id);
             if (person != null)
             {
-                _context.People.Remove(person);
+                people.Remove(person);
             }
-            
-            await _context.SaveChangesAsync();
+
             return RedirectToAction(nameof(Index));
         }
 
         private bool PersonExists(int id)
         {
-          return (_context.People?.Any(e => e.IdPeople == id)).GetValueOrDefault();
+            return people.Any(e => e.IdPeople == id);
         }
     }
 }
